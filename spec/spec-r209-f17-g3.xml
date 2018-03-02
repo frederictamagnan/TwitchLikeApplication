@@ -1,0 +1,902 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This template is for creating an Internet Draft using xml2rfc,
+     which is available here: http://xml.resource.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+     There has to be one entity for each item to be referenced.
+     An alternate method (rfc include) is described in the references. -->
+
+<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+     please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+     (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+     (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- do not display copyright and other IETF-related stuff -->
+<?rfc private="(c) GROUP XXXX, 2013" ?>
+
+<rfc category="info" docName=" Group 3 :c2w protocol specification proposal" ipr="trust200902">
+  <!-- category values: std, bcp, info, exp, and historic
+     ipr values: full3667, noModification3667, noDerivatives3667
+     you can add the attributes updates="NNNN" and obsoletes="NNNN"
+     they will automatically be output with "(if approved)" -->
+
+  <!-- ***** FRONT MATTER ***** -->
+
+  <front>
+    <!-- The abbreviated title is used in the page header - it is only necessary if the
+         full title is longer than 39 characters -->
+
+    <title abbrev="C2W protocol specification">
+    </title>
+
+    <!-- add 'role="editor"' below for the editors if appropriate -->
+
+
+    <author fullname="Maya Assal" initials=" M" surname="ASSAL">
+   
+      <organization>Telecom Bretagne</organization>
+
+      <address>
+        <postal>
+          <street></street>
+
+          <!-- Reorder these if your country does things differently -->
+
+          <city>Brest</city>
+
+          <region></region>
+
+          <code></code>
+
+          <country>France</country>
+        </postal>
+
+
+
+        <email>maya.assal@telecom-bretagne.eu</email>
+
+        <!-- uri and facsimile elements may also be added -->
+      </address>
+    </author>
+
+<author fullname="Frederic Tamagnan" initials=" F" surname="TAMAGNAN">
+
+<organization>Telecom Bretagne</organization>
+
+      <address>
+        <postal>
+          <street></street>
+
+          <!-- Reorder these if your country does things differently -->
+
+          <city>Brest</city>
+
+          <region></region>
+
+          <code></code>
+
+          <country>France</country>
+        </postal>
+
+
+
+        <email>frederic.tamagnan@telecom-bretagne.eu</email>
+
+        <!-- uri and facsimile elements may also be added -->
+      </address>
+    </author>
+
+
+
+
+
+    <date month="oct" year="2017" />
+
+    <!-- If the month and year are both specified and are the current ones, xml2rfc will fill
+         in the current day for you. If only the current year is specified, xml2rfc will fill
+	 in the current day and month for you. If the year is not the current one, it is
+	 necessary to specify at least a month (xml2rfc assumes day="1" if not specified for the
+	 purpose of calculating the expiry date).  With drafts it is normally sufficient to
+	 specify just the year. -->
+
+    <keyword>c2w</keyword>
+
+    <!-- Keywords will be incorporated into HTML output
+         files in a meta tag but they have no effect on text or nroff
+         output. If you submit your draft to the RFC Editor, the
+         keywords will be used for the search engine. -->
+
+    <abstract>
+      <t>A specification  of C2W protocol that allows a C2W application online chatting while watching a video.The system is composed of different rooms, each of them correponds to a film where clients in a same room CAN discuss. </t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section title="Introduction">
+      <t>
+	The C2W is an application protocol which allows an online chatting with users present in the same room ,either the main room or the 		movie room . 
+</t>
+<t>
+	The client needs to login at the beginning to establish a connection with the server: He enters his USER NAME, SERVER'S IP ADRESS and SERVER'S PORT NUMBER.The server check if the USER NAME does already exist.If it's the case it sends to the client an error message ,else he sends to the client a unique ID and directes him to the main room.</t>
+<t> In the main room client CAN see the list of available movies and the list of users present in the same main room . He CAN chat with them or join a movie room where he can also have acces to the list of users in the same room while watching a video. </t>
+<t>When a client sends a message in a the main room or the movie room, all the users in that same room will receive it. 
+
+	</t>
+<t>If a client wants to leave a movie room he will be directed to the main room there he CAN leave the Application bye quitting the main 		room and turning back to the login window.
+
+	</t>
+<t>C2W protocol SHOULD work on both TCP and UDP transport protocoles. It should ensure the reliability given that the UDP is an  		unreliable protocol.
+
+	</t>
+<t>To make it simple, we are going to consider a fixed format of a packet for every message. Only the data field changes from one message  		to another.
+	
+	.</t>
+<section title="Requirements Language">
+<t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
+</t>
+</section>
+
+    </section>
+
+
+<section title="Server Configuration">
+<t>
+An event is defined as every action on the software (join a movie room, add message, etc)
+The server MUST keep in its database the list of events. When an event happens, the server updates its database.
+It MUST keep the mapping between every user_name and user_ID.
+The server has also in his database the list of movies.
+
+It gives the smallest user_ID to each new user.
+It MUST make sure that it can send back every client request.
+
+</t>
+</section>
+
+
+
+<section title="terminology and abbreviaitons">
+
+ <t><list style="symbols">
+          <t>UDP : User Datagram Protocol</t>
+
+          <t>TCP : Transmission Control Protocol.</t>
+
+          <t>ACK: Acknowledgement.</t>
+          <t>IP : Internet Protocol.</t>
+          <t>c2w : Chat While Watching.</t>
+	
+	
+          
+        </list> You can write text here as well.</t>
+</section>
+
+
+
+
+    <section title="Packet Format">
+
+
+        
+
+
+
+
+     <t>
+   Our protocol is going to consider the following fixed-format of a packet:
+   </t>
+  <t>
+   <figure align="center" anchor="sample_pka">
+   <artwork>
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    | TYPE  |        SEQUENCE       |Length                         |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+        
+    |	  USER_ID   |                                               |  
+    +-+-+-+-+-+-+-+-+                                               .
+    |                                                               |
+    |                                                               |
+    .                                                               .
+    .                 Message Data(variable length)                 .
+    .                                                               .
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        </artwork></figure></t>
+
+    
+   
+        
+
+        <section title="SEQUENCE (16 bits)">
+	<t>
+        <vspace blankLines='1'/>
+        This field is necessary since the c2w protocol must work with both TCP and UDP Transport layer protocol. The unreliability of the UDP  		protocol imposes to sequence each transmitted packet.
+
+	The sequence number is an integer between 0 and 2^16. When logging in, the sequence field is initialized with 0 and incremented when an ACK of the message sent is recieved. The server and each client have their own single sequence 
+
+	Each message MUST be acknowleged with the same number of sequence.In the case that a server or the client haven't receive an ACK in a certain delay,it MUST re-send the message with the same number of sequence. If it's always the case it MUST stop sending the message 		to avoid saturating the receiver. 
+        </t>
+	</section>
+        <section title="TYPE (4 bits)">
+<texttable anchor="table_example" title="A Very Simple Table">
+          
+
+          <ttcol align="center">Binary Code</ttcol>
+
+          <ttcol align="center">Type</ttcol>
+		
+          <c>0000</c>
+          <c>login request</c>
+	<c>0001</c>
+          <c>login response</c>
+
+          
+
+          <c>leave_room request</c>
+
+          <c>0010</c>
+
+          <c>leave_room response</c>
+          <c>0100</c>
+
+          <c>message request</c>
+
+          <c>1000</c>
+
+          <c>message forward</c>
+
+          <c>0011</c>
+          <c>message ACK</c>
+
+          <c>0101</c>
+
+          <c>users' list response </c>
+
+          <c>1001</c>
+
+          <c>users' list ACK</c>
+	   <c>0110</c>
+
+          <c>movies' response</c>
+
+          <c>1010</c>
+	<c>movies' list ACK</c>
+
+          <c>1100</c>
+
+          <c>Select movie request</c>
+<c>0111</c>
+
+          <c>Select movie response</c>
+
+          <c>1011</c>
+          
+	<c>error message log in pseudo   </c>
+	<c> 1101</c>
+<c>error message log in, too much users </c>
+	<c> 1110</c>
+        </texttable>
+	<t>
+        <vspace blankLines='1'/>
+        This field specifies the id number of the type of the message according to the following table.
+    
+	
+	
+        <list style='hanging'>
+
+
+        <t hangText="login request -> |0000|">
+        <vspace blankLines='2'/>
+        When logging in, the client MUST send a user name to the server.He enters in the login window the socket corresponding to the 	 		server and his user name</t><t>
+	DATA=user name
+        </t>
+
+
+        <t hangText="login response -> |0001|">
+        <vspace blankLines='2'/>
+        When a login request is sent ,the server checks if the USER NAME has already been used then sends a 
+	ACK to the client either LOG_IN DONE or LOG_IN FAIL. </t><t>If the LOG_IN DONE the server sends a unique USER ID to the client.The it 		sends the movies' list to the client and Then it updates the user's list in the main room and sends it to each main_room_user.
+        </t>
+
+
+        <t hangText="leave_room request -> |0010|">
+        <vspace blankLines='2'/>
+	The client asks the server to leave a room,either from a movie room to the main room or from th main room to the login 
+	window(disconnection). </t><t>
+	DATA=Empty
+        </t>
+
+
+        <t hangText="leave_room response  -> |0100|">
+        <vspace blankLines='2'/>
+	It's an acknowledgement from the server to the client</t><t>
+	DATA=Empty
+        </t>
+
+<t hangText="message request -> |1000|">
+        <vspace blankLines='2'/>
+        The client in a room sends a message to the server</t><t>
+	DATA=MESSAGE
+        </t>
+
+<t hangText="message forward -> 0011">
+        <vspace blankLines='2'/>
+        The server forwards the message request to all the users in the same room including the client sender. This message plays the role of an ACK from the server to the client.</t><t>
+	Data=Message
+        </t>
+
+<t hangText="message ACK -> 0101">
+        <vspace blankLines='2'/>
+     Each client sends an ACK to the server. So that the server make sure that each client has received the message. In case of non receiving one ACK the server in a certain delay, the server re_sends the message to the concerned client.
+	DATA=EMPTY
+
+        </t>
+
+
+
+
+        <t hangText="users' list response -> |1001|">
+        <vspace blankLines='2'/>
+        The server sends the list of users of the same movie room requested by the client to the client himself and 
+	the other users in the same room to update the list. 
+	DATA=
+	length1 user_name1
+	length2 user_name2
+        </t>
+
+
+        <t hangText="users' list ACK -> |0110| ">
+        <vspace blankLines='2'/>
+        Each client MUST send a ACK to the server, after receiving the user's list.</t><t>DATA=EMPTY</t> 
+	
+       
+
+
+        <t hangText="movies' response -> 1010">
+        <vspace blankLines='2'/>
+	The server sends to the client the list of movies available in the main room</t><t>
+	DATA=
+	length1  movie1</t><t>
+	length2 movie2
+        </t>
+
+
+        <t hangText="movies' list ACK  -> |1100|">
+        <vspace blankLines='2'/>
+          
+	After receiving the Movie's list the client MUST send a ACK to the server
+	DATA=EMPTY
+        </t>
+
+        <t hangText="Select movie request  -> |0111|">
+        <vspace blankLines='2'/>
+         
+	After receiving the Movie's list the client MUST send a ACK to the server
+	DATA=EMPTY
+        </t>
+
+        <t hangText="Select movie response  -> |1011|">
+        <vspace blankLines='2'/>
+         Every movie corresponds to a socket. The server provides the video flow sens to the client the user's list in that same movie room.
+	It, then upadates the new user's list and sends it to each user in that same room.
+        </t>
+
+        <t hangText="error message log in pseudo -> |1101|">
+        <vspace blankLines='2'/>
+         The server sends an error message when the user enters a name which has already been used by another .</t><t>
+	DATA=EMPTY
+        </t>
+	
+	 <t hangText="error message log in, too much users -> |1110|">
+        <vspace blankLines='2'/>
+         The server sends an error message when the sever is saturated.</t><t>
+	DATA=EMPTY
+        </t>
+
+         
+	
+        
+
+       
+       
+        </list>
+
+        </t>
+	</section>
+        <section title="Packet Length (16 bits)">
+        <t>
+        <vspace blankLines='1'/>
+         It contains the length of the Data. The data on UDP can't exceed 65527 that's why the length is above 2 bytes
+
+    
+        </t>
+	</section>
+	<section title="User ID (16 bits)">
+	<t>
+        <vspace blankLines="1"></vspace>
+	 It contains the ID of the sending client which has been choosen by the server in the phase of logging in.
+
+        </t>
+	</section>
+        <section title="Message Data (variable length)">
+	<t>
+        <vspace blankLines='1'/>
+        This field contains the name that is the object of the request, encoded in ASCII.</t><t>
+        Both the client and the server MUST always specify the name in each message.
+        </t>
+	</section>
+        
+        
+
+    </section>
+    
+    
+    <section title="Example scenario">
+    <section title="scenario 1:log in">
+    <t>
+	When a client log in, he enters his user name and the (IP, PORT) of the server. 
+	the packet sent by the client to the server has the following format
+	</t>
+	
+	<t>
+	Example: USER_NAME="MAYA"</t><t>
+     TYPE:0000 SEQUENCE=0 LENGTH=4 USER_ID=0 DATA=MAYA</t>
+        
+	<t>Packet send by the server in case of success</t>
+
+
+     <t>TYPE:0001 SEQUENCE=0 LENGTH=0 USER_ID=00000001 DATA=EMPTY</t>
+        
+<t>
+ 	Then the server sends the list of users in the main room to each user present in the main room </t>
+	<t>Example of packet sent to user "Maya"</t>
+	<t>TYPE: 1001 SEQ=1 LENGTH=... ID_user=00000001 DATA=Length1 User_Name1  Length2 USER _NAME2 </t>
+
+ 
+ <t>The server Waits the ACK from each user. </t>
+	 <t>Example of ACK paquet sent by "MAYA" to the server:</t>
+	 <t>TYPE 0110 SEQ=1 LENGTH=0 ID_user=00000001 DATA: EMPTY</t>
+ <t><vspace blankLines="0" />The server sends the list of movies to each user in the main room </t>
+	 <t>Example of packet sent to user Maya:</t>
+	 <t>TYPE:1010 SEQ=2 LENGTH=... ID_user=00000000 DATA=Length1 MOVIE1  Length2 MOVIE2 </t>
+ <t><vspace blankLines="0" />The server then waits for the ACK from each client:</t>
+	<t>Example of ACK sent by "MAYA"</t>
+   <t>	TYPE: 1100 SEQ=2 LENGTH=... ID_user=00000001 DATA=EMPTY</t>
+	<t>
+    <figure>
+    <artwork>
+
+We can also use a figure like this:
+
+     Client A                      Server                      Client B
+     |                            |                              |
+     |      Message 1 (Request)   |                              |
+     |--------------------------->|                              |
+     |       (LOG_IN request)     |                              |
+     |                            |                              |
+     |                            |                              |
+     |      Message 2 (Response)  |                              |
+     |&lt;---------------------------|                              |
+     |      (LOG_IN response)     |                              |
+     |                            |                              |
+     |     Message 3 (RESPONSE)   |                              |
+     |&lt;---------------------------|----------------------------->|
+     |     (USER'S list)          |        (USER'S list)         |
+     |                            |                              |
+     |                            |                              |
+     |            USERS ACK       |                              | 
+     |--------------------------->|    USERS ACK                 |        
+     |                            |&lt;-----------------------------|
+     |      Message 4 (RESPONSE)  |                              |
+     |&lt;---------------------------|----------------------------->|
+     |         (MOVIES' list)     |         (MOVIES' list)       |
+     |                            |                              |
+     |                            |                              |
+     |            ACK             |                              | 
+     |--------------------------->|               ACK            |  
+     |                            |&lt;-----------------------------|
+
+
+
+    </artwork></figure></t>
+
+    </section>
+
+
+
+<section title="Scenario 2: Enter Movie Room">
+    <t>
+	When a client select a movie, he enters in the correspondant movie room. The server sends to each user in that movie room 		(including the client himself) the new list of users. </t><t>It then updates the users' list of th main room and send it to users in the main room.
+	</t>
+
+<t>SELECT MOVIE REQUEST:</t>
+	<t>Example: USER_NAME="MAYA" </t>
+    <t> SELECT MOVIE1="SCARRY" </t>
+	<t>TYPE:0111 SEQUENCE=3 LENGTH=6 USER_ID=00000001 DATA="SCARRY" </t>
+	
+	
+	
+    
+    
+
+
+<t>
+ 	Then the server sends the list of users in the same movie room to each user present in the same room </t>
+	<t>Exemple of packet sent to user "MAYA" </t>
+	<t>TYPE: 1001 SEQ=3 LENGTH=... ID_user=00000001 DATA=LENGTH1 User_Name1  LENGTH2 USER _NAME2 </t>
+
+
+ 
+
+ <t> The server Waits the ACK from each user. </t><t>
+	Exemple of ACK paquet sent by "MAYA" to the server: </t>
+	<t>TYPE 0110 SEQ=3 LENGTH=0 ID_user=00000001 DATA: EMPTY</t>
+ 
+    <t><figure>
+    <artwork>
+
+Suppose that the client A is in the main room B in the movie room 
+selected by A and C still in the main room:
+
+ Client C           Client A                Server    Client B
+|                        |                      |             |
+|                        | Message 1 (Request)  |             |
+|                        |--------------------->|             |
+|                        |   (SELECT MOVIE )    |             |
+|                        |                      |             |
+|                        |                      |             |
+|                        | Message 2 (Response) |             |
+|                        |&lt;---------------------|             |
+|                        |SELECT MOVIE response)|             |
+|                        |                      |             |
+|                        | Message 3 (RESPONSE) |             |
+|                        |&lt;---------------------|------------>|
+|                        | (USER'S list)        |(USER'S list)|
+|                        |                      |             |
+|                        |                      |             |
+|                        |                      |             |
+|&lt;----------------------------------------------|             |
+|       USER'S list      |                      |             |
+|                        | A USER ACK           |             | 
+|                        |--------------------->|  B USER ACK |  
+|---------------------------------------------->|&lt;------------|
+|                                   C USER ACK                                        
+        
+
+    </artwork></figure></t>
+	
+
+    </section>
+
+	<section title="Scenario 3:Message Request">
+    <t>
+	When a client sends a message in a room, the server forwards it to each user present in that room (including the client sender).</t><t> 
+	 
+	the packet sent by the client to the server has the following format
+	</t>
+	
+	<t>
+	<figure align="center" anchor="sample_pkg">
+    <artwork>
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    | 1000  |        4      |Length         |        Client_ID      |  
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    .                                                               .                                            
+    |                                                               |
+    .                                                               .
+    .                 DATA=Message                                  .
+    .                                                               .
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        </artwork></figure></t>
+	
+    
+    
+	<t>the Server sends to each client present in that same room the message(including the client sender):</t>
+        
+
+	<t>Example: paquet forwarded to client B with USER_ID=00010001 </t>
+	<t>TYPE=0011 SEQUENCE=4 LENGTH=5 ID_USER=00010001 DATA="HELLO"</t>
+	
+
+
+<t>
+ Then the server waits an ack from other users sends  </t>
+	<t>Exemple of packet sent by the user "Maya" to the server </t>
+	<t>TYPE: 0101 SEQ=4 LENGTH=0 ID_user=00000001 DATA=EMPTY</t>
+	
+
+    <t><figure>
+    <artwork>
+
+We can also use a figure like this:
+
+Client A                     Server               Client B
+ |                          |                    |
+ |  Message 1 (Request)     |                    |
+ |------------------------->|                    |
+ |     (send message )      |                    |
+ |                          |                    |
+ |                          |                    |
+ |                          |                    |
+ |                          |                    |
+ |                          |                    |
+ |                          |                    |
+ | Message 2 (RESPONSE)     |                    |
+ |&lt;-------------------------|------------------->|
+ |   (message forward)      |  (message forward) | 
+ |                          |                    |
+ |                          |                    |
+ |            USERS ACK     |                    | 
+ |------------------------->|     USERS ACK      |        
+ |                          |&lt;-------------------|
+        
+
+    </artwork></figure></t>
+	
+
+    </section>
+
+
+<section title="scenario 4:leave a movie room">
+    <t>
+	When a client wants to leave a movie room, he sends a leave_room request to go back to the main room.</t><t>
+	The packet sent by the client to the server has the following format
+	</t>
+	
+	<t>Example: USER_NAME="MAYA" </t>
+	<t>TYPE:0010 SEQUENCE=5 LENGTH=0 USER_ID=00000001 DATA=empty
+        </t>
+        
+
+<t>
+ 	The server directs him to the main room and updates the list of users in the main room to each user present in the main room and does the same with users in the left movie room.</t><t>
+
+The server Waits the ACK from each user.If the server doesn't receive a ACK from a user in a 3 seconds, it re-sends it. In case of failure after 3 times in total it stops sending. </t><t>
+It sends then the list of movies available in the main room to the client.	
+</t>
+	<t>
+    <figure>
+    <artwork>
+
+You can also use a figure like this:
+
+Client A (in a movie room)      Server  Client B (in the main room)
+  |                               |               |
+  |   Message 1 (Request)         |               |
+  |------------------------------>|               |
+  |     (leave_room request)      |               |
+  |                               |               |
+  |                               |               |
+  |  Message 2 (Response)         |               |
+  |&lt;------------------------------|               |
+  | ( leave_room response)        |               |
+  |                               |               |
+  |     Message 3 (RESPONSE)      |               |
+  |&lt;------------------------------|-------------->|
+  |  (USER'S list)                |  (USER'S list)|
+  |                               |               |
+  |                               |               |
+  |   USER ACK                    |               | 
+  |------------------------------>|     USER      |        
+  |                               |&lt;--------------|
+  |     Message 3 (RESPONSE)      |               |
+  |&lt;------------------------------|               |
+  |    (MOVIES' list)             |               |
+  |                               |               |
+  |                               |               |
+  |     USER ACK                  |               | 
+  |------------------------------>|  USER ACK     |  
+  |                               |&lt;--------------|
+
+
+
+    </artwork></figure></t>
+
+    </section>
+<section title="scenario 4:leave main room (disconnect)">
+    <t>
+	When a client wants to leave a main, he sends a leave_room request to disconnect.
+	The packet sent by the client to the server has the following format
+	</t>
+	
+	<t>Example: USER_NAME="MAYA" </t>
+	<t>TYPE:0010 SEQUENCE=6 LENGTH=0 USER_ID=00000001 DATA=empty</t>
+        
+
+
+
+<t>
+ 	The server diconnect the client and then updates the list of users in the main room to each user present in the main room.
+The server Waits the ACK from each user.If the server doesn't receive a ACK from a user in a 3 seconds, it re-sends it. </t><t>In case of failure after 3 times in total it stops sending.
+</t>
+	<t>
+    <figure>
+    <artwork>
+
+Suppose that A wants to disconnect, B stays in the main room
+
+Client A (in a movie room)     Server  Client B (in the main room)
+  |                             |                 |
+  |   Message 1 (Request)       |                 |
+  |  (leave_room request)       |                 |
+  |                             |                 |
+  |                             |                 |
+  |   Message 2 (Response)      |                 |
+  |&lt;----------------------------|                 |
+  |  ( leave_room response)     |                 |
+  |                             |                 |
+  |                             |                 |
+  |                             |---------------->|
+  |                             |  USER'S list)   |
+  |                             |                 |
+  |                             |                 |
+  |                             |                 | 
+  |                             |  USER  ACK      |        
+  |                             |&lt;----------------|
+  |                             |                 |
+    
+
+
+
+    </artwork></figure></t>
+
+
+</section>
+<section title="scenario 5: error message log in, too much users">
+    <t>
+	When a client wants to join a room which is full of users, the server answers him an error message indicating that the room is saturated. Let's assume that Maya is the client.
+	
+     </t>
+      <t>FORMAT OF ERROR MESSAGE (response) : </t>
+    <t> TYPE:1110 SEQUENCE=10 LENGTH=0 USER_ID=00000001 DATA=EMPTY </t>
+    
+	
+	<t>
+    <figure>
+    <artwork>
+
+
+
+Client A (wants to join a room)                  Server                                      
+    |                                               |                                             
+    |             Message 1 (Request)               |                                             
+    |---------------------------------------------->|                                             
+    |               (select_room request)           |                                             
+    |                                               |                                             
+    |             Message 2 (Response)              |                                             
+    |&lt;----------------------------------------------|                                            
+    |                 ( error message)              |                                             
+    |                                               |                                             
+    |                                               |                                             
+      
+    
+
+
+
+    </artwork></figure></t>
+
+    </section>
+
+<section title="scenario 6: error message log in, user name already taken">
+
+ <t>
+	When a client wants to join the main room and the user_name wanted is already taken. Let's assume that Maya is the client. </t>
+	<t>FORMAT OF ERROR MESSAGE (response) :  </t>
+	<t>TYPE:1101 SEQUENCE=10 LENGTH=0 USER_ID=00000001 DATA=EMPTY </t>
+    
+	
+
+
+    </section>
+
+
+
+
+    </section><!--End of examples-->
+
+    
+
+  </middle>
+
+  <!--  *****BACK MATTER ***** -->
+
+  <back>
+    <!-- References split into informative and normative -->
+
+    <!-- There are 2 ways to insert reference entries from the citation libraries:
+     1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+     2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+        (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+     Both are cited textually in the same manner: by using xref elements.
+     If you use the PI option, xml2rfc will, by default, try to find included files in the same
+     directory as the including file. You can also define the XML_LIBRARY environment variable
+     with a value containing a set of directories to search.  These can be either in the local
+     filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+    <references title="Normative References">
+      <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
+
+
+      <reference anchor="min_ref">
+        <!-- the following is the minimum to make xml2rfc happy -->
+
+        <front>
+          <title>c2w protocol specification proposal</title>
+
+          <author initials="A" surname="Blanc">
+            <organization></organization>
+          </author>
+
+          <date year="2006" />
+        </front>
+      </reference>
+    </references>
+
+    <references title="Informative References">
+      <!-- Here we use entities that we defined at the beginning. -->
+      <!-- A reference written by by an organization not a person. -->
+
+      <reference anchor="FindIPAdress"
+       target="https://formations.telecom-bretagne.eu/fad/pluginfile.php/69283/mod_resource/content/1/FindIpAddress-bin.xml">
+
+
+        <front>
+          <title>Sample Protocol Specification:  FindIpAddress</title>
+
+          <author initials="A B" surname="Blanc">
+            <organization> TELECOM BRETAGNE</organization>
+          </author>
+
+          <date year="June 2006" />
+        </front>
+      </reference>
+    </references>
+
+
+
+    <!-- Change Log
+
+v00 2006-03-15  EBD   Initial version
+
+v01 2006-04-03  EBD   Moved PI location back to position 1 -
+                      v3.1 of XMLmind is better with them at this location.
+v02 2007-03-07  AH    removed extraneous nested_list attribute,
+                      other minor corrections
+v03 2007-03-09  EBD   Added comments on null IANA sections and fixed heading capitalization.
+                      Modified comments around figure to reflect non-implementation of
+                      figure indent control.  Put in reference using anchor="DOMINATION".
+                      Fixed up the date specification comments to reflect current truth.
+v04 2007-03-09 AH     Major changes: shortened discussion of PIs,
+                      added discussion of rfc include.
+v05 2007-03-10 EBD    Added preamble to C program example to tell about ABNF and alternative
+                      images. Removed meta-characters from comments (causes problems).  -->
+  </back>
+</rfc>

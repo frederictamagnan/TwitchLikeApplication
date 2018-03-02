@@ -1,0 +1,359 @@
+# -*- coding: utf-8 -*-
+from twisted.internet.protocol import DatagramProtocol
+from c2w.main.lossy_transport import LossyTransport
+import logging
+from c2w.main.constants import ROOM_IDS
+logging.basicConfig()
+moduleLogger = logging.getLogger('c2w.protocol.udp_chat_client_protocol')
+
+import struct
+from c2w.protocol.Packet import Packet
+
+class c2wUdpChatClientProtocol(DatagramProtocol):
+
+    def __init__(self, serverAddress, serverPort, clientProxy, lossPr):
+        """
+        :param serverAddress: The IP address (or the name) of the c2w server,
+            given by the user.
+        :param serverPort: The port number used by the c2w server,
+            given by the user.
+        :param clientProxy: The clientProxy, which the protocol must use
+            to interact with the Graphical User Interface.
+
+        Class implementing the UDP version of the client protocol.
+
+        .. note::
+            You must write the implementation of this class.
+
+        Each instance must have at least the following attributes:
+
+        .. attribute:: serverAddress
+
+            The IP address of the c2w server.
+
+        .. attribute:: serverPort
+
+            The port number of the c2w server.
+
+        .. attribute:: clientProxy
+
+            The clientProxy, which the protocol must use
+            to interact with the Graphical User Interface.
+
+        .. attribute:: lossPr
+
+            The packet loss probability for outgoing packets.  Do
+            not modify this value!  (It is used by startProtocol.)
+
+        .. note::
+            You must add attributes and methods to this class in order
+            to have a working and complete implementation of the c2w
+            protocol.
+        """
+
+        #: The IP address of the c2w server.
+        self.serverAddress = serverAddress
+        #: The port number of the c2w server.
+        self.serverPort = serverPort
+        #: The clientProxy, which the protocol must use
+        #: to interact with the Graphical User Interface.
+        self.clientProxy = clientProxy
+        self.lossPr = lossPr
+        self.movie_list=[]
+        self.num_seq=0
+        self.expected_num_seq=0
+        self.user_name=""
+        self.listUser=self.listMovie=False
+        self.timer=None
+	self.room=''
+
+    def startProtocol(self):
+        """
+        DO NOT MODIFY THE FIRST TWO LINES OF THIS METHOD!!
+
+        If in doubt, do not add anything to this method.  Just ignore it.
+        It is used to randomly drop outgoing packets if the -l
+        command line option is used.
+        """
+        self.transport = LossyTransport(self.transport, self.lossPr)
+        DatagramProtocol.transport = self.transport
+
+    def sendLoginRequestOIE(self, userName):
+        """
+        :param string userName: The user name that the user has typed.
+
+        The client proxy calls this function when the user clicks on
+        the login button.
+        """
+        moduleLogger.debug('loginRequest called with username=%s', userName)
+
+        packet=Packet(0,0,len(userName)+1,[len(userName),userName])
+
+        self.sendPacket(packet,host_port)
+        #dés que j'envoie un data j'incremente mon num seq
+        self.num_seq=(self.num_seq+1)%2047
+        self.user_name=userName
+
+
+
+
+    def sendChatMessageOIE(self, message):
+        """
+        :param message: The text of the chat message.
+        :type message: string
+
+        Called by the client proxy  when the user has decided to send
+        a chat message
+
+        .. note::
+           This is the only function handling chat messages, irrespective
+           of the room where the user is.  Therefore it is up to the
+           c2wChatClientProctocol or to the server to make sure that this
+           message is handled properly, i.e., it is shown only by the
+           client(s) who are in the same room.
+        """
+
+
+        seqNumber=self.num_seq
+        packet = Packet(64, seqNumber, len(userName) +len(message)+2, [len(userName), userName,len(message),message])
+        self.sendPacket(packet,host_port)
+        self.num_seq=(self.num_seq+1)%2047
+    def ack(self,packet,host_port):
+
+        ack=Packet(80,packet.numSeq,0,None)
+        self.transport.write(ack.pack(), host_port)
+
+
+    def sendJoinRoomRequestOIE(self, roomName):
+        """
+        :param roomName: The room name (or movie title.)
+
+        Called by the client proxy  when the user
+        has clicked on the watch button or the leave button,
+        indicating that she/he wants to change room.
+
+        .. warning:
+            The controller sets roomName to
+            c2w.main.constants.ROOM_IDS.MAIN_ROOM when the user
+            wants to go back to the main room.
+        """
+	self.room=roomName
+	if roomName==ROOM_IDS.MAIN_ROOM:
+		main_packet=Packet(49,self.num_seq,0,None)
+		self.sendPacket(main_packet,host_port)
+		self.num_seq=(self.num_seq+1)%2047
+	else:
+		movie_packet=Packet(48,self.num_seq,len(roomName)+1,roomName)
+		self.sendPacket(movie_packet,host_port)
+		self.num_seq=(self.num_seq+1)%2047
+    def sendLeaveSystemRequestOIE(self):
+        """
+        Called by the client proxy  when the user
+        has clicked on the leave button in the main room.
+        """
+        
+
+    def datagramReceived(self, datagram, host_port):
+        """
+        :param string datagram: the payload of the UDP packet.
+        :param host_port: a touple containing the source IP address and port.
+
+        Called **by Twisted** when the client has received a UDP
+        packet.
+        """
+        print("datagram", datagram)
+        packet = Packet(0, 0, 0, 0)
+        packet.unpackHeader(datagram)
+        print(" datagram bien recu")
+        print(packet)
+        #if we receive a message we ack it
+        if packet.message_type != 80:
+            self.ack(packet,host_port)
+
+        if self.expected_num_seq!=packet.num_seq:
+            print('unexpected num seq')
+        #here we have a verified num_seq and and ack message we should cancel our callater
+        elif packet.message_type ==80:
+            self.timer.cancel()
+            self.call_count=1
+            
+            #dans ce stade on est sur que le num seq est verifié et quil sagit dun message d'ack
+        else:
+            self.num_seq += 1
+
+            if packet.message_type ==1:
+                print('connexion etablie')
+            elif packet.message_type ==2:
+                print('connexion echouée')
+            elif packet.message_type==128:
+                pass
+
+
+            elif packet.message_type==16:
+                self.listMovie = True
+                self.movieListReceived(packet,datagram)
+
+            # self.clientProxy.initCompleteONE([("alice",ROOM_IDS.MAIN_ROOM)], self.movie_list)
+
+
+
+            elif packet.message_type==19:
+                self.listUser=True
+                print("userlist received")
+                UserList =self.userListReceived(packet,datagram)
+            if self.listUser==True and self.listMovie==True:
+                self.clientProxy.initCompleteONE(self.listUser, self.listMovie)
+
+            elif packet.message_type ==65:
+                self.chatReceived(packet,datagram)
+
+
+
+
+
+    def chatReceived(self,packet,datagram):
+        packet.data=[]
+        offset=4
+        lenSender=struct.unpack_from('!B',datagram,offset)[0]
+        offset+=1
+        sender=struct.unpack_from('!'+str(lenSender)+'s')[0]
+        offset+=lenSender
+        lenMessage=struct.unpack_from('!B',datagram,offset)[0]
+        message=struct.unpack_from('!'+str(lenMessage)+'s')
+        print('Chat received',message,'from',sender,'the whole packet is',packet)#
+        self.clientProxy.chatMessageReceivedOne(sender,message)
+    def errorReceived(self,packet,datagram):
+
+        #ToDo
+        pass
+
+
+
+    def userListReceived(self,packet,datagram):
+
+        print('packet.data AVANT',packet.data)
+        packet.data=[]
+        print('packet.data APRES',packet.data)
+
+        offset=4
+        len_Rooms = struct.unpack_from("!H", datagram, offset)[0]  # nombre de salon
+        i=0
+        print(len_Rooms)
+        print('datagram',datagram,'taille',len(datagram))
+        offset += 2
+        packet.data.append(len_Rooms)
+        for i in range(len_Rooms):
+            print('Hakuna')
+            #print(type(struct.unpack_from('!H', datagram, offset=offset)[0]))
+            len_UserList = struct.unpack_from('!H', datagram, offset=offset)[0]
+            print('len_UserList',len_UserList)
+            print('i',i)
+            packet.data.append(len_UserList)
+            print('packet.data aVANT FOR',packet.data)
+
+            offset+=2
+            print('i',i, 'offset',offset)
+            print('Avant For')
+            if len_UserList!=0:
+                for j in range(0,len_UserList):
+                    if j==0:
+                        UserMovie=ROOM_IDS.MAIN_ROOM
+                    else:
+                        UserMovie=ROOM_IDS.MOVIE_ROOM
+
+                    print('j',j,offset)
+
+                    len_UserName = struct.unpack_from('!B', datagram, offset=offset)[0]
+                    print('len_UserName',len_UserName)
+                    packet.data.append(len_UserName)
+                    print('packet.data APRES ajout len userName', packet.data)
+                    offset+=1
+                    print('i',i,'j',j,'offset',offset)
+                    print('lenUserName',len_UserName)
+                    User=struct.unpack_from( "!" + str(len_UserName) + "s", datagram, offset=offset)[0]
+                    print('User',User.decode('utf8'))
+
+                    packet.data.append(User.decode('utf8'))
+                    List.append((User.decode('utf8'),UserMovie))
+                    print('packet.data apres User', packet.data)
+
+                    offset+=len_UserName
+
+            print('Apres FOR')
+            print('i fin',i)
+        print("final movie list packet !!!", packet)
+        return(List)
+
+    def movieListReceived(self,packet,datagram):
+
+        packet.data = []
+        len_movie_list=struct.unpack_from("!H",datagram,offset=4)[0] #nombre de salon
+
+        packet.data.append(len_movie_list)
+        offset = 6
+        i=0
+        while i< len_movie_list:
+
+            format = "!B"
+            len_movie_title=struct.unpack_from(format,datagram,offset=offset)[0]
+            packet.data.append(len_movie_title)
+
+
+
+            format="!"+str(len_movie_title)+"s"
+            offset+=1
+            movie_title=struct.unpack_from(format,datagram,offset=offset)[0]
+            packet.data.append(movie_title.decode("utf8"))
+
+            ip_movie=[]
+            format = "!B"
+
+            offset+= len_movie_title
+            #unpacker l'adresse ip
+            for j in range(0,4):
+
+                ip_movie.append(struct.unpack_from(format,datagram,offset=offset)[0])
+                offset += 1
+
+            print(ip_movie)
+            ip_movie=list(map(str,ip_movie)) #ecrire dans une liste les 4 octet de l'adresse ip
+            print(ip_movie)
+
+            packet.data.append('.'.join(list(map(str,ip_movie))))
+            print('.'.join(ip_movie))
+
+
+            format='!H'
+
+            port_movie=struct.unpack_from(format,datagram,offset)[0]
+            packet.data.append(port_movie)
+            offset+=2
+            i=i+1
+
+
+            movie_tuple=(movie_title.decode("utf8"),ip_movie,port_movie)
+            self.movie_list.append(movie_tuple)
+        print("Data packet !!!", packet.data)
+
+        print("final movie list packet !!!" ,packet)
+        return packet
+
+
+
+
+
+
+    def sendPacket(self,packet,host_port,call_count=1):#this function assure the SendAndWait protocol
+        self.transport.write(packet.pack(), host_port)
+        user_name = self.serverProxy.getUserByAddress(host_port).userName
+        call_count+=1
+        if call_count <= 4:
+            self.timer=reactor.callLater(5, self.sendPacket,packet, host_port, call_count)
+
+
+
+    def ack(self,packet,host_port):
+
+        ack=Packet(80,packet.num_seq,0,None)
+        self.transport.write(ack.pack(), host_port)
+        print("ACK SET CONF")
